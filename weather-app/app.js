@@ -7,7 +7,12 @@ var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
+const WeatherService = require('./services/WeatherService');
+
 var app = express();
+
+// initialize weatherService
+const weatherService = new WeatherService();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -19,12 +24,25 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
+app.use('/', indexRouter({
+  weatherService,
+}));
 app.use('/users', usersRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
+});
+
+// use middleware to fetch location
+app.use(async(req, res, next) => {
+  try {
+    const weatherData = await weatherService.getWeather();
+    return next();
+  } 
+  catch (error) {
+    return next(error);
+  }
 });
 
 // error handler
